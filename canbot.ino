@@ -2,10 +2,12 @@
 
 #define JOYSTICK_X_PIN A0
 #define JOYSTICK_Y_PIN A1
-#define JOYSTICK_PUSH_PIN 7
-#define ARM_PIN 8
-#define YAW_PIN 9
-#define CLAW_PIN 10
+#define JOYSTICK_PUSH_PIN 2
+#define YAW_PIN 3
+#define CLAW_PIN 4
+#define ARM_PIN 5
+#define DEAD_ZONE 100
+#define STEP_SIZE 1
 
 Servo yaw;
 Servo arm;
@@ -13,7 +15,7 @@ Servo claw;
 
 bool clawOpened;
 
-int xValue, yValue, angleX, angleY;
+int xValue, yValue, inputAngleX, inputAngleY, yawAngle, armAngle;
 
 void setup() {
   yaw.attach(YAW_PIN);
@@ -30,18 +32,31 @@ void loop() {
   xValue = analogRead(JOYSTICK_X_PIN);
   yValue = analogRead(JOYSTICK_Y_PIN);
   
-  angleX = map(xValue, 0, 1023, 0, 180);
-  angleY = map(yValue, 0, 1023, 0, 180);
-
-  yaw.write(angleX);
-  arm.write(angleY);
-
   if(digitalRead(JOYSTICK_PUSH_PIN) == LOW) {
     clawOpened = !clawOpened;
 
     if(clawOpened) claw.write(0);
-    else claw.write(120);
+    else claw.write(20);
   }
+
+  // X Axis Control
+  if (xValue > 512 + DEAD_ZONE) {
+    yawAngle += STEP_SIZE;
+  }
+  else if (xValue < 512 - DEAD_ZONE) {
+    yawAngle -= STEP_SIZE;
+  }
+
+  // Y Axis Control
+  if (yValue > 512 + DEAD_ZONE) {
+    armAngle += STEP_SIZE;
+  }
+  else if (yValue < 512 - DEAD_ZONE) {
+    armAngle -= STEP_SIZE;
+  }
+
+  yaw.write(constrain(yawAngle, 0, 180));
+  arm.write(constrain(armAngle, 0, 180));
 
   delay(20);
 }
